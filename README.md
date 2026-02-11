@@ -9,7 +9,6 @@ Daemon that monitors [Horcrux](https://github.com/strangelove-ventures/horcrux) 
 - Slack notifications (required) + Telegram (optional)
 - Scheduled status reports (3x/day, configurable)
 - Alert cooldown to avoid spam
-- State persistence across restarts
 - Per-node naming for multi-cosigner deployments
 
 ## Installation
@@ -69,6 +68,40 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now horcrux-monitoring
 sudo journalctl -u horcrux-monitoring -f
 ```
+
+## How It Works
+
+Every `check_interval` (default 30s) the daemon collects metrics and runs health checks.
+
+### Reports
+
+| Type | When | Content |
+|------|------|---------|
+| Startup | On daemon start | Full status |
+| Alert | New problem detected | Full status |
+| Recovery | Problem resolved | Full status |
+| Scheduled | 09:00, 13:00, 17:00 Dubai time | Full status |
+
+### Alert Timing
+
+- **New problem** — full report sent immediately
+- **Ongoing problem** — re-alert after `alert_cooldown` (default 5min)
+- **Recovery** — full report when problem clears
+- **Cosigner unreachable** — alert after missed shares grow for 3 consecutive checks (90s), single hiccup ignored
+
+### Health Checks
+
+| Check | Source | Severity | Condition |
+|-------|--------|----------|-----------|
+| Metrics endpoint down | HTTP GET `/metrics` | Critical | Unreachable |
+| Height stale | `signer_last_prevote_height` | Critical | No change for 3 checks (90s) |
+| Missed precommits | `signer_missed_precommits` | Critical | > threshold (default 3) |
+| Seconds since last sign | `signer_seconds_since_last_precommit` | Critical | > threshold (default 30s) |
+| Insufficient cosigners | `signer_error_total_insufficient_cosigners` | Critical | Counter increasing |
+| Missed prevotes | `signer_missed_prevotes` | Warning | > threshold (default 5) |
+| Cosigner unreachable | `signer_missed_ephemeral_shares` | Warning | Growing for 3+ checks |
+| Sentry unreachable | RPC `/status` | Warning | Unreachable |
+| Raft election timeouts | `signer_total_raft_leader_election_timeout` | Warning | Counter increasing |
 
 ## Network Requests
 
