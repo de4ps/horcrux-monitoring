@@ -93,18 +93,14 @@ def main():
             report = checker.run()
             result = state.process_report(report)
 
-            # Problem alerts
-            if result["new_alerts"]:
-                msg = format_problem_alert(result["new_alerts"], name=name)
+            # Problem alerts — send full report instead of just problems
+            if result["new_alerts"] or result["re_alerts"]:
+                msg = format_full_report(report, config.timezone, name=name, title="Horcrux Alert")
                 notify_all(notifiers, msg)
 
-            if result["re_alerts"]:
-                msg = format_problem_alert(result["re_alerts"], name=name, is_re_alert=True)
-                notify_all(notifiers, msg)
-
-            # Recovery notifications
+            # Recovery notifications — send full report
             if result["recoveries"]:
-                msg = format_recovery(result["recoveries"], state.format_duration, name=name)
+                msg = format_full_report(report, config.timezone, name=name, title="Horcrux Recovery")
                 notify_all(notifiers, msg)
 
             # Scheduled reports
