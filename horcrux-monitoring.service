@@ -5,7 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=horcrux
-ExecStart=/usr/bin/python3 -m horcrux_monitor --config /etc/horcrux-monitoring/config.yaml
+WorkingDirectory=/opt/horcrux-monitoring
+ExecStart=/opt/horcrux-monitoring/.venv/bin/python3 -m horcrux_monitor --config /etc/horcrux-monitoring/config.yaml
 EnvironmentFile=-/etc/horcrux-monitoring/env
 Restart=always
 RestartSec=10

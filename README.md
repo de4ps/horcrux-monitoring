@@ -15,16 +15,10 @@ Daemon that monitors [Horcrux](https://github.com/strangelove-ventures/horcrux) 
 ## Installation
 
 ```bash
-# Clone
-git clone https://github.com/de4ps/horcrux-monitoring.git
-cd horcrux-monitoring
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy and edit config
-cp config.example.yaml config.yaml
-nano config.yaml
+sudo git clone https://github.com/de4ps/horcrux-monitoring.git /opt/horcrux-monitoring
+sudo /opt/horcrux-monitoring/install.sh
+sudo nano /etc/horcrux-monitoring/config.yaml
+sudo systemctl enable --now horcrux-monitoring
 ```
 
 ## Configuration
@@ -65,13 +59,6 @@ python3 -m horcrux_monitor --config config.yaml --debug
 ## systemd
 
 ```bash
-# Copy service file
-sudo cp horcrux-monitoring.service /etc/systemd/system/
-
-# Create config directory
-sudo mkdir -p /etc/horcrux-monitoring
-sudo cp config.yaml /etc/horcrux-monitoring/config.yaml
-
 # Optional: env file for secrets
 sudo cp horcrux-monitoring.env.example /etc/horcrux-monitoring/env
 sudo nano /etc/horcrux-monitoring/env
@@ -80,7 +67,8 @@ sudo nano /etc/horcrux-monitoring/env
 sudo mkdir -p /var/lib/horcrux-monitoring
 sudo chown horcrux:horcrux /var/lib/horcrux-monitoring
 
-# Enable and start
+# Install service
+sudo cp horcrux-monitoring.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now horcrux-monitoring
 sudo journalctl -u horcrux-monitoring -f
