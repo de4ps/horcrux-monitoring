@@ -74,7 +74,10 @@ def fetch_block_height(host: str, rpc_port: int, timeout: int = 5) -> Optional[i
 
 
 def parse_address(addr: str) -> Tuple[str, int]:
-    """Parse host:port string. Returns (host, port)."""
+    """Parse host:port string, stripping protocol prefix (tcp://, etc). Returns (host, port)."""
+    # Strip protocol prefix
+    if "://" in addr:
+        addr = addr.split("://", 1)[1]
     if ":" in addr:
         parts = addr.rsplit(":", 1)
         return parts[0], int(parts[1])
