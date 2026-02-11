@@ -12,7 +12,7 @@ def fetch_metrics(url: str, timeout: int = 5) -> Optional[Dict[str, float]]:
         resp.raise_for_status()
         return parse_prometheus_text(resp.text)
     except Exception as e:
-        log.warning("Failed to fetch metrics from %s: %s", url, e)
+        log.debug("Failed to fetch metrics from %s: %s", url, e)
         return None
 
 
@@ -69,7 +69,7 @@ def fetch_block_height(host: str, rpc_port: int, timeout: int = 5) -> Optional[i
         height = int(data["result"]["sync_info"]["latest_block_height"])
         return height
     except Exception as e:
-        log.warning("Failed to fetch block height from %s: %s", url, e)
+        log.debug("Failed to fetch block height from %s: %s", url, e)
         return None
 
 

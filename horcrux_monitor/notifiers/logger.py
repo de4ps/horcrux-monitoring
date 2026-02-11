@@ -9,5 +9,5 @@ class LogNotifier(BaseNotifier):
     """Notifier that prints to stdout/log. Always active."""
 
     def send(self, message: str) -> bool:
-        print(message)
+        log.info("Report:\n%s", message)
         return True
