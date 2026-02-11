@@ -5,7 +5,6 @@ metrics_timeout: 5
 block_time: 6
 alert_cooldown: 300
 timezone: "Asia/Dubai"
-state_file: /var/lib/horcrux-monitoring/state.json
 
 scheduled_reports:
   hours: [9, 13, 17]    # Local time (Dubai)

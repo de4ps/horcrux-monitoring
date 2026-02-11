@@ -10,8 +10,7 @@ DEFAULTS = {
     "block_time": 6,
     "alert_cooldown": 300,
     "timezone": "Asia/Dubai",
-    "state_file": "/var/lib/horcrux-monitoring/state.json",
-    "scheduled_reports": {"hours": [9, 13, 17]},
+"scheduled_reports": {"hours": [9, 13, 17]},
     "thresholds": {
         "missed_precommits": 3,
         "missed_prevotes": 5,
@@ -44,7 +43,6 @@ class Config:
         self.block_time: int = data["block_time"]
         self.alert_cooldown: int = data["alert_cooldown"]
         self.timezone: str = data["timezone"]
-        self.state_file: str = data["state_file"]
         self.scheduled_hours: list = data["scheduled_reports"]["hours"]
         self.thresholds: dict = data["thresholds"]
 

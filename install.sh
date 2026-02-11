@@ -3,8 +3,6 @@ set -euo pipefail
 
 INSTALL_DIR="/opt/horcrux-monitoring"
 CONFIG_DIR="/etc/horcrux-monitoring"
-STATE_DIR="/var/lib/horcrux-monitoring"
-SERVICE_USER="horcrux"
 
 echo "==> Installing horcrux-monitoring"
 
@@ -22,11 +20,6 @@ if [ ! -f "$CONFIG_DIR/config.yaml" ]; then
 else
     echo "==> Config already exists at $CONFIG_DIR/config.yaml, skipping"
 fi
-
-# State dir
-echo "==> Creating state directory"
-mkdir -p "$STATE_DIR"
-chown "$SERVICE_USER":"$SERVICE_USER" "$STATE_DIR"
 
 # systemd
 echo "==> Installing systemd service"

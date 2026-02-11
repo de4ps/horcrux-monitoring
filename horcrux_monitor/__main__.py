@@ -56,7 +56,6 @@ def main():
 
     checker = Checker(config)
     state = StateManager(
-        state_file=config.state_file if not args.dry_run else "",
         alert_cooldown=config.alert_cooldown,
         scheduled_hours=config.scheduled_hours,
         timezone=config.timezone,
@@ -80,7 +79,6 @@ def main():
     startup_msg = format_startup_report(report, config.timezone, name=name)
     notify_all(notifiers, startup_msg)
     state.process_report(report)  # Initialize state from first run
-    state.save_state()
 
     if args.once:
         return
@@ -113,8 +111,6 @@ def main():
             if state.is_scheduled_report_due():
                 msg = format_full_report(report, config.timezone, name=name)
                 notify_all(notifiers, msg)
-
-            state.save_state()
 
         except Exception:
             log.exception("Error in monitoring loop")

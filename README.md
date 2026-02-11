@@ -63,10 +63,6 @@ python3 -m horcrux_monitor --config config.yaml --debug
 sudo cp horcrux-monitoring.env.example /etc/horcrux-monitoring/env
 sudo nano /etc/horcrux-monitoring/env
 
-# Create state directory
-sudo mkdir -p /var/lib/horcrux-monitoring
-sudo chown horcrux:horcrux /var/lib/horcrux-monitoring
-
 # Install service
 sudo cp horcrux-monitoring.service /etc/systemd/system/
 sudo systemctl daemon-reload

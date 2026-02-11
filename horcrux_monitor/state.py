@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -12,59 +10,13 @@ log = logging.getLogger(__name__)
 
 
 class StateManager:
-    def __init__(self, state_file: str, alert_cooldown: int,
+    def __init__(self, alert_cooldown: int,
                  scheduled_hours: List[int], timezone: str):
-        self.state_file = state_file
         self.alert_cooldown = alert_cooldown
         self.scheduled_hours = sorted(scheduled_hours)
         self.tz = ZoneInfo(timezone)
         self.active_alerts: Dict[str, AlertState] = {}
         self.last_scheduled_hour: Optional[int] = None
-        self._load_state()
-
-    def _load_state(self):
-        if not self.state_file or not os.path.exists(self.state_file):
-            return
-        try:
-            with open(self.state_file) as f:
-                data = json.load(f)
-            for key, val in data.get("active_alerts", {}).items():
-                self.active_alerts[key] = AlertState(
-                    severity=Severity(val["severity"]),
-                    message=val["message"],
-                    first_seen=val["first_seen"],
-                    last_alerted=val["last_alerted"],
-                    count=val.get("count", 1),
-                )
-            self.last_scheduled_hour = data.get("last_scheduled_hour")
-            log.info("Loaded state with %d active alerts", len(self.active_alerts))
-        except Exception as e:
-            log.warning("Failed to load state from %s: %s", self.state_file, e)
-
-    def save_state(self):
-        if not self.state_file:
-            return
-        try:
-            state_dir = os.path.dirname(self.state_file)
-            if state_dir:
-                os.makedirs(state_dir, exist_ok=True)
-            data = {
-                "active_alerts": {
-                    key: {
-                        "severity": alert.severity.value,
-                        "message": alert.message,
-                        "first_seen": alert.first_seen,
-                        "last_alerted": alert.last_alerted,
-                        "count": alert.count,
-                    }
-                    for key, alert in self.active_alerts.items()
-                },
-                "last_scheduled_hour": self.last_scheduled_hour,
-            }
-            with open(self.state_file, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception as e:
-            log.warning("Failed to save state to %s: %s", self.state_file, e)
 
     def process_report(self, report: FullReport) -> dict:
         """Process a report and determine what notifications to send.
@@ -128,13 +80,6 @@ class StateManager:
             if self.last_scheduled_hour != current_hour:
                 self.last_scheduled_hour = current_hour
                 return True
-        else:
-            # Reset when hour changes away from scheduled
-            if self.last_scheduled_hour not in self.scheduled_hours:
-                pass
-            elif current_hour not in self.scheduled_hours:
-                # Allow reset so next scheduled hour can fire
-                pass
         return False
 
     def format_duration(self, seconds: float) -> str:
