@@ -20,7 +20,14 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
     time_str = now.strftime("%Y-%m-%d %H:%M")
     tz_name = timezone.split("/")[-1]
 
-    header = f"\U0001f4ca {title}"
+    if report.has_critical:
+        status_icon = "\U0001f534"  # 🔴
+    elif report.has_problems:
+        status_icon = "\u26a0\ufe0f"  # ⚠️
+    else:
+        status_icon = "\u2705"  # ✅
+
+    header = f"{status_icon} {title}"
     if name:
         header += f" [{name}]"
     header += f" \u2014 {time_str} ({tz_name})"
@@ -132,14 +139,13 @@ def _check_message_suffix(report: FullReport, alert_key: str) -> str:
 
 
 def _format_cosigner(cs: CosignerStatus) -> str:
-    emoji = EMOJI[cs.status]
     if cs.is_self:
-        shares_str = "n/a (self)"
+        return f"  \u2705 Shard {cs.shard_id} ({cs.address}) \u2014 self"
     elif cs.missed_shares is not None:
-        shares_str = str(cs.missed_shares)
+        emoji = EMOJI[cs.status]
+        return f"  {emoji} Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: {cs.missed_shares}"
     else:
-        shares_str = "n/a"
-    return f"  {emoji} Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: {shares_str}"
+        return f"  \u2705 Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: n/a"
 
 
 def _format_sentry(s: SentryStatus) -> str:

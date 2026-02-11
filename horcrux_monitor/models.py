@@ -44,8 +44,6 @@ class CosignerStatus:
 
     @property
     def status(self) -> CheckStatus:
-        if self.missed_shares is not None and self.missed_shares > 0:
-            return CheckStatus.WARNING
         return CheckStatus.OK
 
 

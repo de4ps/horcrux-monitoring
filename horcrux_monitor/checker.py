@@ -16,6 +16,8 @@ class Checker:
         self.config = config
         self.prev_insufficient_cosigners: Optional[float] = None
         self.prev_raft_election_timeouts: Optional[float] = None
+        self.prev_missed_shares: Dict[str, int] = {}   # addr → previous value
+        self.cosigner_miss_streak: Dict[str, int] = {}  # addr → consecutive growing checks
         self.prev_height: Optional[int] = None
         self.height_stale_count: int = 0
 
@@ -241,14 +243,22 @@ class Checker:
             )
             report.cosigners.append(status)
 
-            # Missed shares check
-            if shares is not None and shares > th["missed_ephemeral_shares"]:
-                checks.append(CheckResult(
-                    name=f"cosigner_{shard_id}_shares",
-                    status=CheckStatus.WARNING,
-                    message=f"Cosigner shard {shard_id} ({addr}) missed {shares} ephemeral shares",
-                    alert_key=f"cosigner_{shard_id}_shares",
-                ))
+            # Missed shares — alert when growing for 2+ consecutive checks (ignores brief hiccups)
+            if shares is not None and not is_self:
+                prev = self.prev_missed_shares.get(addr)
+                self.prev_missed_shares[addr] = shares
+                if prev is not None and shares > prev:
+                    self.cosigner_miss_streak[addr] = self.cosigner_miss_streak.get(addr, 0) + 1
+                else:
+                    self.cosigner_miss_streak[addr] = 0
+
+                if self.cosigner_miss_streak.get(addr, 0) >= 3:
+                    checks.append(CheckResult(
+                        name=f"cosigner_{shard_id}_shares",
+                        status=CheckStatus.WARNING,
+                        message=f"Cosigner shard {shard_id} ({addr}) missed shares growing ({shares})",
+                        alert_key=f"cosigner_{shard_id}_shares",
+                    ))
 
     def _check_sentries(self, report: FullReport, checks: List[CheckResult]):
         cfg = self.config
