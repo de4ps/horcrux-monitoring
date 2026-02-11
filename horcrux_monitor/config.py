@@ -83,12 +83,12 @@ class Config:
 
         self.debug_addr = hc.get("debugAddr", "")
 
-        # Parse cosigners from signState or cosigner config
-        self.threshold = hc.get("threshold", 0)
-        self.shards_total = hc.get("shards", 0) or len(hc.get("cosigners", [])) + 1
+        # thresholdMode wraps cosigners and threshold in horcrux v3
+        tm = hc.get("thresholdMode", {})
 
-        # Parse cosigners - Horcrux config has cosigner entries
-        cosigners_cfg = hc.get("cosigners", [])
+        self.threshold = tm.get("threshold", hc.get("threshold", 0))
+        cosigners_cfg = tm.get("cosigners", hc.get("cosigners", []))
+        self.shards_total = len(cosigners_cfg) if cosigners_cfg else 0
         shard_id = hc.get("shardID", 0)
 
         # Build cosigner list
