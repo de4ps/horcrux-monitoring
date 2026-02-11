@@ -89,27 +89,13 @@ class Config:
         self.threshold = tm.get("threshold", hc.get("threshold", 0))
         cosigners_cfg = tm.get("cosigners", hc.get("cosigners", []))
         self.shards_total = len(cosigners_cfg) if cosigners_cfg else 0
-        shard_id = hc.get("shardID", 0)
 
-        # Build cosigner list
         for cs in cosigners_cfg:
-            p2p_addr = cs.get("p2pAddr", "")
-            cs_shard = cs.get("shardID", 0)
             self.cosigners.append({
-                "shard_id": cs_shard,
-                "address": p2p_addr,
-                "is_self": (cs_shard == shard_id),
+                "shard_id": cs.get("shardID", 0),
+                "address": cs.get("p2pAddr", ""),
             })
 
-        # If this node's shard isn't in cosigners, add it
-        if shard_id and not any(c["shard_id"] == shard_id for c in self.cosigners):
-            self.cosigners.append({
-                "shard_id": shard_id,
-                "address": "",
-                "is_self": True,
-            })
-
-        # Sort by shard_id
         self.cosigners.sort(key=lambda c: c["shard_id"])
 
         # Parse chain nodes / sentries

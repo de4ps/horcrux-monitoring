@@ -214,22 +214,24 @@ class Checker:
         th = cfg.thresholds
 
         # Get missed ephemeral shares from metrics
-        missed_shares = {}
+        # peerid label is the full p2pAddr, e.g. peerid="tcp://192.168.101.102:9876"
+        missed_shares_by_addr = {}
         if metrics:
             labeled = get_labeled_metrics(metrics, "signer_missed_ephemeral_shares")
             for label, val in labeled.items():
-                # label is like: peerid="2"
+                # label is like: peerid="tcp://192.168.101.102:9876"
                 try:
-                    peer_id = int(label.split('"')[1])
-                    missed_shares[peer_id] = int(val)
+                    addr_key = label.split('"')[1]
+                    missed_shares_by_addr[addr_key] = int(val)
                 except (IndexError, ValueError):
                     continue
 
         for cs in cfg.cosigners:
             shard_id = cs["shard_id"]
             addr = cs["address"]
-            is_self = cs["is_self"]
-            shares = None if is_self else missed_shares.get(shard_id)
+            # Self = cosigner whose address is NOT in metrics (no missed shares for self)
+            is_self = bool(addr) and addr not in missed_shares_by_addr and bool(missed_shares_by_addr)
+            shares = None if is_self else missed_shares_by_addr.get(addr)
 
             status = CosignerStatus(
                 shard_id=shard_id,
