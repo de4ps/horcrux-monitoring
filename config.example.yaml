@@ -1,0 +1,29 @@
+name: "cosigner-1"
+horcrux_config: /home/horcrux/.horcrux/config.yaml
+check_interval: 30
+metrics_timeout: 5
+block_time: 6
+alert_cooldown: 300
+timezone: "Asia/Dubai"
+state_file: /var/lib/horcrux-monitoring/state.json
+
+scheduled_reports:
+  hours: [9, 13, 17]    # Local time (Dubai)
+
+thresholds:
+  missed_precommits: 3
+  missed_prevotes: 5
+  missed_ephemeral_shares: 5
+  seconds_since_last_sign: 30
+  height_stale_checks: 3
+  tcp_timeout: 3
+  rpc_port: 26657
+
+slack:
+  webhook_url: ""        # or SLACK_WEBHOOK_URL env var
+  mention: ""
+
+telegram:
+  enabled: false
+  bot_token: ""          # or TELEGRAM_BOT_TOKEN env var
+  chat_id: ""            # or TELEGRAM_CHAT_ID env var

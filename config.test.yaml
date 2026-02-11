@@ -1,0 +1,27 @@
+# Test config — no real horcrux config needed
+check_interval: 30
+metrics_timeout: 5
+block_time: 6
+alert_cooldown: 300
+timezone: "Asia/Dubai"
+state_file: ""
+
+scheduled_reports:
+  hours: [9, 13, 17]
+
+thresholds:
+  missed_precommits: 3
+  missed_prevotes: 5
+  missed_ephemeral_shares: 5
+  seconds_since_last_sign: 30
+  height_stale_checks: 3
+  tcp_timeout: 3
+
+slack:
+  webhook_url: ""
+  mention: ""
+
+telegram:
+  enabled: false
+  bot_token: ""
+  chat_id: ""
