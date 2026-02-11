@@ -39,14 +39,11 @@ class CheckResult:
 class CosignerStatus:
     shard_id: int
     address: str
-    tcp_ok: bool
     missed_shares: Optional[int]  # None for self
     is_self: bool = False
 
     @property
     def status(self) -> CheckStatus:
-        if not self.tcp_ok:
-            return CheckStatus.WARNING
         if self.missed_shares is not None and self.missed_shares > 0:
             return CheckStatus.WARNING
         return CheckStatus.OK
@@ -56,15 +53,12 @@ class CosignerStatus:
 class SentryStatus:
     index: int
     address: str
-    tcp_ok: bool
     block_height: Optional[int] = None
     rpc_ok: bool = True
 
     @property
     def status(self) -> CheckStatus:
-        if not self.tcp_ok or not self.rpc_ok:
-            return CheckStatus.WARNING
-        return CheckStatus.OK
+        return CheckStatus.OK if self.rpc_ok else CheckStatus.WARNING
 
 
 @dataclass

@@ -133,18 +133,16 @@ def _check_message_suffix(report: FullReport, alert_key: str) -> str:
 
 def _format_cosigner(cs: CosignerStatus) -> str:
     emoji = EMOJI[cs.status]
-    tcp_str = "ok" if cs.tcp_ok else "FAIL"
     if cs.is_self:
         shares_str = "n/a (self)"
     elif cs.missed_shares is not None:
         shares_str = str(cs.missed_shares)
     else:
         shares_str = "n/a"
-    return f"  {emoji} Shard {cs.shard_id} ({cs.address}) \u2014 TCP: {tcp_str}, missed shares: {shares_str}"
+    return f"  {emoji} Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: {shares_str}"
 
 
 def _format_sentry(s: SentryStatus) -> str:
     emoji = EMOJI[s.status]
-    tcp_str = "ok" if s.tcp_ok else "FAIL"
-    height_str = f"{s.block_height:,}" if s.block_height is not None else "n/a"
-    return f"  {emoji} Sentry {s.index} ({s.address}) \u2014 TCP: {tcp_str}, height: {height_str}"
+    height_str = f"{s.block_height:,}" if s.block_height is not None else "unreachable"
+    return f"  {emoji} Sentry {s.index} ({s.address}) \u2014 height: {height_str}"

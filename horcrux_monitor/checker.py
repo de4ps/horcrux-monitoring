@@ -5,7 +5,7 @@ from .models import CheckResult, CheckStatus, CosignerStatus, SentryStatus, Full
 from .config import Config
 from .collector import (
     fetch_metrics, get_metric, get_labeled_metrics,
-    probe_cosigners, probe_sentries, fetch_block_height, parse_address,
+    fetch_block_height, parse_address,
 )
 
 log = logging.getLogger(__name__)
@@ -213,8 +213,6 @@ class Checker:
         cfg = self.config
         th = cfg.thresholds
 
-        tcp_results = probe_cosigners(cfg.cosigners, th["tcp_timeout"])
-
         # Get missed ephemeral shares from metrics
         missed_shares = {}
         if metrics:
@@ -231,26 +229,15 @@ class Checker:
             shard_id = cs["shard_id"]
             addr = cs["address"]
             is_self = cs["is_self"]
-            tcp_ok = tcp_results.get(shard_id, True)
             shares = None if is_self else missed_shares.get(shard_id)
 
             status = CosignerStatus(
                 shard_id=shard_id,
                 address=addr or "(self)",
-                tcp_ok=tcp_ok,
                 missed_shares=shares,
                 is_self=is_self,
             )
             report.cosigners.append(status)
-
-            # TCP check
-            if not tcp_ok:
-                checks.append(CheckResult(
-                    name=f"cosigner_{shard_id}_tcp",
-                    status=CheckStatus.WARNING,
-                    message=f"Cosigner shard {shard_id} ({addr}) TCP unreachable",
-                    alert_key=f"cosigner_{shard_id}_tcp",
-                ))
 
             # Missed shares check
             if shares is not None and shares > th["missed_ephemeral_shares"]:
@@ -266,13 +253,8 @@ class Checker:
         th = cfg.thresholds
         rpc_port = th["rpc_port"]
 
-        tcp_results = probe_sentries(cfg.sentries, th["tcp_timeout"])
-
         for i, sentry in enumerate(cfg.sentries):
             addr = sentry["address"]
-            tcp_ok = tcp_results.get(i, True)
-
-            # Fetch block height via RPC
             host, _ = parse_address(addr)
             block_height = fetch_block_height(host, rpc_port, cfg.metrics_timeout)
             rpc_ok = block_height is not None
@@ -280,19 +262,10 @@ class Checker:
             status = SentryStatus(
                 index=i + 1,
                 address=addr,
-                tcp_ok=tcp_ok,
                 block_height=block_height,
                 rpc_ok=rpc_ok,
             )
             report.sentries.append(status)
-
-            if not tcp_ok:
-                checks.append(CheckResult(
-                    name=f"sentry_{i}_tcp",
-                    status=CheckStatus.WARNING,
-                    message=f"Sentry {i + 1} ({addr}) TCP unreachable",
-                    alert_key=f"sentry_{i}_tcp",
-                ))
 
             if not rpc_ok:
                 checks.append(CheckResult(

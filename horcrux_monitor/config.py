@@ -17,7 +17,6 @@ DEFAULTS = {
         "missed_ephemeral_shares": 5,
         "seconds_since_last_sign": 30,
         "height_stale_checks": 3,
-        "tcp_timeout": 3,
         "rpc_port": 26657,
     },
 }

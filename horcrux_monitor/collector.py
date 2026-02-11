@@ -1,4 +1,3 @@
-import socket
 import logging
 import requests
 from typing import Dict, Optional, Tuple
@@ -32,7 +31,6 @@ def parse_prometheus_text(text: str) -> Dict[str, float]:
             # Split into name (with optional labels) and value
             if " " in line:
                 key, val_str = line.rsplit(" ", 1)
-                # Handle timestamp field (third space-separated value)
                 # Prometheus format: metric_name [labels] value [timestamp]
                 metrics[key.strip()] = float(val_str)
         except (ValueError, IndexError):
@@ -61,44 +59,6 @@ def get_labeled_metrics(metrics: Dict[str, float], prefix: str) -> Dict[str, flo
     return result
 
 
-def tcp_probe(host: str, port: int, timeout: int = 3) -> bool:
-    """Check if a TCP port is reachable."""
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        sock.connect((host, port))
-        sock.close()
-        return True
-    except (socket.timeout, socket.error, OSError) as e:
-        log.debug("TCP probe failed for %s:%d: %s", host, port, e)
-        return False
-
-
-def parse_address(addr: str) -> Tuple[str, int]:
-    """Parse host:port string. Returns (host, port)."""
-    if ":" in addr:
-        parts = addr.rsplit(":", 1)
-        return parts[0], int(parts[1])
-    return addr, 0
-
-
-def probe_cosigners(cosigners: list, timeout: int = 3) -> Dict[int, bool]:
-    """Probe all cosigner TCP ports. Returns shard_id → reachable."""
-    results = {}
-    for cs in cosigners:
-        shard_id = cs["shard_id"]
-        addr = cs["address"]
-        if cs["is_self"] or not addr:
-            results[shard_id] = True
-            continue
-        host, port = parse_address(addr)
-        if port:
-            results[shard_id] = tcp_probe(host, port, timeout)
-        else:
-            results[shard_id] = True
-    return results
-
-
 def fetch_block_height(host: str, rpc_port: int, timeout: int = 5) -> Optional[int]:
     """Fetch latest block height from CometBFT/Tendermint RPC /status endpoint."""
     url = f"http://{host}:{rpc_port}/status"
@@ -113,14 +73,9 @@ def fetch_block_height(host: str, rpc_port: int, timeout: int = 5) -> Optional[i
         return None
 
 
-def probe_sentries(sentries: list, timeout: int = 3) -> Dict[int, bool]:
-    """Probe all sentry TCP ports. Returns index → reachable."""
-    results = {}
-    for i, sentry in enumerate(sentries):
-        addr = sentry["address"]
-        host, port = parse_address(addr)
-        if port:
-            results[i] = tcp_probe(host, port, timeout)
-        else:
-            results[i] = True
-    return results
+def parse_address(addr: str) -> Tuple[str, int]:
+    """Parse host:port string. Returns (host, port)."""
+    if ":" in addr:
+        parts = addr.rsplit(":", 1)
+        return parts[0], int(parts[1])
+    return addr, 0

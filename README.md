@@ -1,11 +1,11 @@
 # Horcrux Monitoring
 
-Daemon that monitors [Horcrux](https://github.com/strangelove-ventures/horcrux) threshold signer health via Prometheus metrics and TCP probes, sending alerts to Slack and optionally Telegram.
+Daemon that monitors [Horcrux](https://github.com/strangelove-ventures/horcrux) threshold signer health via Prometheus metrics and CometBFT RPC, sending alerts to Slack and optionally Telegram.
 
 ## Features
 
 - Prometheus metrics parsing (signing height, missed votes, cosigner errors, raft state)
-- TCP probes for cosigners and sentry nodes
+- CometBFT RPC block height checks for sentry nodes
 - Slack notifications (required) + Telegram (optional)
 - Scheduled status reports (3x/day, configurable)
 - Alert cooldown to avoid spam
@@ -77,13 +77,11 @@ Every check cycle (default 30s), the monitor makes these requests:
 | # | Type | Target | Purpose |
 |---|------|--------|---------|
 | 1 | HTTP GET | `http://{debugAddr}/metrics` | Fetch Prometheus metrics from local horcrux node |
-| 2 | TCP handshake only | `{cosigner.p2pAddr}` per remote cosigner | Check port is open (no data sent, just SYN/ACK + FIN) |
-| 3 | TCP handshake only | `{chainNode.privValAddr}` per sentry | Check port is open (no data sent, just SYN/ACK + FIN) |
-| 4 | HTTP GET | `http://{sentry_host}:{rpc_port}/status` per sentry | Fetch latest block height from CometBFT RPC |
-| 5 | HTTP POST | Slack webhook | Send alert/report (only when needed) |
-| 6 | HTTP POST | Telegram API | Send alert/report (optional, only when needed) |
+| 2 | HTTP GET | `http://{sentry_host}:{rpc_port}/status` per sentry | Fetch latest block height from CometBFT RPC |
+| 3 | HTTP POST | Slack webhook | Send alert/report (only when needed) |
+| 4 | HTTP POST | Telegram API | Send alert/report (optional, only when needed) |
 
-All addresses are read from the horcrux config file. RPC host is derived from `privValAddr`, port from `thresholds.rpc_port` (default 26657). For a 7-cosigner + 4-sentry setup: **1 HTTP GET (metrics) + 6 TCP probes + 4 TCP probes + 4 HTTP GET (RPC) = 15 requests per cycle**. Self-cosigner is skipped.
+All read-only. No TCP probes, no connections to signing infrastructure. Cosigner health determined from Prometheus metrics (`signer_missed_ephemeral_shares`). RPC host derived from `privValAddr`, port from `thresholds.rpc_port` (default 26657). For a 4-sentry setup: **1 HTTP GET (metrics) + 4 HTTP GET (RPC) = 5 requests per cycle**.
 
 ## Multi-cosigner setup
 
