@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 DEFAULTS = {
     "check_interval": 30,
-    "metrics_timeout": 5,
+    "metrics_timeout": 2,
     "block_time": 6,
     "alert_cooldown": 300,
     "timezone": "Asia/Dubai",

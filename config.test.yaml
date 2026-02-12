@@ -1,6 +1,6 @@
 # Test config — no real horcrux config needed
 check_interval: 30
-metrics_timeout: 5
+metrics_timeout: 2
 block_time: 6
 alert_cooldown: 300
 timezone: "Asia/Dubai"
