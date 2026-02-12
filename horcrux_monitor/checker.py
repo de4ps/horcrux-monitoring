@@ -42,8 +42,8 @@ class Checker:
             ))
         else:
             report.metrics_ok = True
-            self._check_signing(metrics, report, checks)
             self._check_raft(metrics, report, checks)
+            self._check_signing(metrics, report, checks)
 
         # TCP probes
         self._check_cosigners(metrics, report, checks)
@@ -75,7 +75,12 @@ class Checker:
                 self.height_stale_count = 0
             self.prev_height = current_height
 
-            if self.height_stale_count >= th["height_stale_checks"]:
+            # If ephemeral shares are fresh, this cosigner is an active
+            # Raft follower — stale signing height is expected, not a problem.
+            eph = report.seconds_since_last_ephemeral_share
+            is_active_follower = eph is not None and eph < cfg.block_time * 3
+
+            if self.height_stale_count >= th["height_stale_checks"] and not is_active_follower:
                 checks.append(CheckResult(
                     name="height_stale",
                     status=CheckStatus.CRITICAL,
