@@ -20,6 +20,15 @@ sudo nano /etc/horcrux-monitoring/config.yaml
 sudo systemctl enable --now horcrux-monitoring
 ```
 
+## Slack Setup
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** → **From scratch**
+2. Name the app (e.g. "Horcrux Monitor"), pick your workspace
+3. In the sidebar go to **Incoming Webhooks** → toggle **Activate Incoming Webhooks** on
+4. Click **Add New Webhook to Workspace**, select the channel for alerts, and authorize
+5. Copy the webhook URL (`https://hooks.slack.com/services/T.../B.../xxx`)
+6. Paste it into `config.yaml` under `slack.webhook_url`, or set the `SLACK_WEBHOOK_URL` env var
+
 ## Configuration
 
 Edit `config.yaml`:
