@@ -138,14 +138,22 @@ def _check_message_suffix(report: FullReport, alert_key: str) -> str:
     return ""
 
 
+def _host_from_address(addr: str) -> str:
+    """Extract host from address like 'tcp://192.168.100.2:2222' -> '192.168.100.2'."""
+    if "://" in addr:
+        addr = addr.split("://", 1)[1]
+    return addr.rsplit(":", 1)[0] if ":" in addr else addr
+
+
 def _format_cosigner(cs: CosignerStatus) -> str:
+    host = _host_from_address(cs.address) if cs.address else "self"
     if cs.is_self:
-        return f"  \u2705 Shard {cs.shard_id} ({cs.address}) \u2014 self"
+        return f"  \u2705 Shard {cs.shard_id} ({host}) \u2014 self"
     elif cs.missed_shares is not None:
         emoji = EMOJI[cs.status]
-        return f"  {emoji} Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: {cs.missed_shares}"
+        return f"  {emoji} Shard {cs.shard_id} ({host}) \u2014 missed shares: {cs.missed_shares}"
     else:
-        return f"  \u2705 Shard {cs.shard_id} ({cs.address}) \u2014 missed shares: n/a"
+        return f"  \u2705 Shard {cs.shard_id} ({host}) \u2014 missed shares: n/a"
 
 
 def _format_sentry(s: SentryStatus) -> str:
