@@ -27,6 +27,15 @@ def _format_duration(seconds: float) -> str:
         return f"{days}d{hours}h"
 
 
+def _format_bytes(b: float) -> str:
+    """Format bytes into human-readable string."""
+    for unit in ("B", "KB", "MB", "GB"):
+        if abs(b) < 1024:
+            return f"{b:.1f} {unit}"
+        b /= 1024
+    return f"{b:.1f} TB"
+
+
 def format_full_report(report: FullReport, timezone: str, name: str = "",
                        title: str = "Horcrux Status Report") -> str:
     """Format a full status report for display."""
@@ -67,6 +76,21 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
         st = _check_status_for(report, "insufficient_cosigners")
         label = _check_message_suffix(report, "insufficient_cosigners")
         lines.append(f"  {EMOJI[st]} Insufficient cosigner errors: {report.insufficient_cosigner_errors:,}{label}")
+    if report.invalid_signature_errors is not None:
+        st = _check_status_for(report, "invalid_signatures")
+        label = _check_message_suffix(report, "invalid_signatures")
+        lines.append(f"  {EMOJI[st]} Invalid signature errors: {report.invalid_signature_errors:,}{label}")
+    if report.beyond_block_errors is not None:
+        st = _check_status_for(report, "beyond_block_errors")
+        label = _check_message_suffix(report, "beyond_block_errors")
+        lines.append(f"  {EMOJI[st]} Beyond-block errors: {report.beyond_block_errors:,}{label}")
+    if report.failed_sign_votes is not None:
+        st = _check_status_for(report, "failed_sign_votes")
+        label = _check_message_suffix(report, "failed_sign_votes")
+        lines.append(f"  {EMOJI[st]} Failed sign votes: {report.failed_sign_votes:,}{label}")
+    if report.seconds_since_last_sign_finish is not None:
+        st = _check_status_for(report, "sign_finish_stale")
+        lines.append(f"  {EMOJI[st]} Last sign finish: {_format_duration(report.seconds_since_last_sign_finish)} ago")
 
     if not report.metrics_ok:
         lines.append(f"  \U0001f534 Metrics endpoint unreachable")
@@ -88,6 +112,12 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
             st = _check_status_for(report, "sentry_connect_tries")
             label = _check_message_suffix(report, "sentry_connect_tries")
             lines.append(f"  {EMOJI[st]} Sentry connect retries: {report.sentry_connect_tries:,}{label}")
+        # Sentry height divergence
+        heights = [s.block_height for s in report.sentries if s.block_height is not None]
+        if len(heights) >= 2:
+            divergence = max(heights) - min(heights)
+            st = _check_status_for(report, "sentry_height_divergence")
+            lines.append(f"  {EMOJI[st]} Height divergence: {divergence} blocks")
 
     # Raft section
     raft_lines = []
@@ -107,6 +137,24 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
         lines.append("")
         lines.append("*Raft:*")
         lines.extend(raft_lines)
+
+    # Process section
+    proc_lines = []
+    if report.process_open_fds is not None and report.process_max_fds is not None:
+        st = _check_status_for(report, "fd_usage")
+        pct = (report.process_open_fds / report.process_max_fds * 100) if report.process_max_fds > 0 else 0
+        proc_lines.append(f"  {EMOJI[st]} FDs: {report.process_open_fds}/{report.process_max_fds} ({pct:.0f}%)")
+    if report.process_memory_bytes is not None:
+        st = _check_status_for(report, "memory_usage")
+        proc_lines.append(f"  {EMOJI[st]} Memory: {_format_bytes(report.process_memory_bytes)}")
+    if report.go_goroutines is not None:
+        st = _check_status_for(report, "goroutine_growth")
+        proc_lines.append(f"  {EMOJI[st]} Goroutines: {report.go_goroutines}")
+
+    if proc_lines:
+        lines.append("")
+        lines.append("*Process:*")
+        lines.extend(proc_lines)
 
     return "\n".join(lines)
 

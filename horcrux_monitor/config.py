@@ -17,6 +17,12 @@ DEFAULTS = {
         "missed_ephemeral_shares": 5,
         "height_stale_checks": 3,
         "rpc_port": 26657,
+        "sign_finish_stale_factor": 2,
+        "ephemeral_share_stale_factor": 3,
+        "sentry_height_divergence": 3,
+        "fd_usage_percent": 80,
+        "memory_bytes": 0,
+        "goroutine_growth_checks": 5,
     },
 }
 

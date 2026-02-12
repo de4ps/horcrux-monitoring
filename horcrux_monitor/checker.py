@@ -21,6 +21,11 @@ class Checker:
         self.prev_height: Optional[int] = None
         self.height_stale_count: int = 0
         self.prev_sentry_connect_tries: Optional[float] = None
+        self.prev_invalid_signatures: Optional[float] = None
+        self.prev_beyond_block_errors: Optional[float] = None
+        self.prev_failed_sign_votes: Optional[float] = None
+        self.prev_goroutines: Optional[int] = None
+        self.goroutine_grow_streak: int = 0
 
     def run(self) -> FullReport:
         """Run all health checks and return a FullReport."""
@@ -46,9 +51,13 @@ class Checker:
             self._check_raft(metrics, report, checks)
             self._check_signing(metrics, report, checks)
             self._check_sentry_connect(metrics, report, checks)
+            self._check_error_counters(metrics, report, checks)
+            self._check_signing_freshness(metrics, report, checks)
+            self._check_process_health(metrics, report, checks)
 
         self._check_cosigners(metrics, report, checks)
         self._check_sentries(report, checks)
+        self._check_sentry_divergence(report, checks)
 
         report.checks = checks
         return report
@@ -313,3 +322,210 @@ class Checker:
                     message=f"Sentry {i + 1} ({addr}) RPC unreachable (port {rpc_port})",
                     alert_key=f"sentry_{i}_rpc",
                 ))
+
+    def _check_error_counters(self, metrics: Dict, report: FullReport, checks: List[CheckResult]):
+        cfg = self.config
+
+        # Helper for counter-delta checks
+        def _counter_delta(metric_name, prev_attr, report_field, check_name, alert_key, severity, label):
+            val = get_metric(metrics, metric_name)
+            if val is None:
+                return
+            setattr(report, report_field, int(val))
+            prev = getattr(self, prev_attr)
+            if prev is not None:
+                delta = val - prev
+                if delta > 0:
+                    checks.append(CheckResult(
+                        name=check_name,
+                        status=severity,
+                        message=f"{label}: {int(val):,} (+{int(delta)} since last check)",
+                        alert_key=alert_key,
+                    ))
+                else:
+                    checks.append(CheckResult(
+                        name=check_name,
+                        status=CheckStatus.OK,
+                        message=f"{label}: {int(val):,} (stable)",
+                        alert_key=alert_key,
+                    ))
+            else:
+                checks.append(CheckResult(
+                    name=check_name,
+                    status=CheckStatus.OK,
+                    message=f"{label}: {int(val):,} (stable)",
+                    alert_key=alert_key,
+                ))
+            setattr(self, prev_attr, val)
+
+        _counter_delta(
+            "signer_error_total_invalid_signatures",
+            "prev_invalid_signatures",
+            "invalid_signature_errors",
+            "invalid_signatures", "invalid_signatures",
+            CheckStatus.CRITICAL, "Invalid signature errors",
+        )
+        _counter_delta(
+            "signer_total_beyond_block_errors",
+            "prev_beyond_block_errors",
+            "beyond_block_errors",
+            "beyond_block_errors", "beyond_block_errors",
+            CheckStatus.WARNING, "Beyond-block errors",
+        )
+        _counter_delta(
+            "signer_total_failed_sign_vote",
+            "prev_failed_sign_votes",
+            "failed_sign_votes",
+            "failed_sign_votes", "failed_sign_votes",
+            CheckStatus.WARNING, "Failed sign votes",
+        )
+
+    def _check_signing_freshness(self, metrics: Dict, report: FullReport, checks: List[CheckResult]):
+        cfg = self.config
+        th = cfg.thresholds
+        block_time = cfg.block_time
+
+        # Seconds since last sign finish (only meaningful for leader)
+        val = get_metric(metrics, "signer_seconds_since_last_local_sign_finish_time")
+        if val is not None:
+            report.seconds_since_last_sign_finish = val
+            threshold = block_time * th["sign_finish_stale_factor"]
+            is_leader = report.is_raft_leader
+            if is_leader and val > threshold:
+                checks.append(CheckResult(
+                    name="sign_finish_stale",
+                    status=CheckStatus.WARNING,
+                    message=f"Last sign finish {val:.1f}s ago (threshold {threshold}s)",
+                    alert_key="sign_finish_stale",
+                ))
+            else:
+                checks.append(CheckResult(
+                    name="sign_finish_stale",
+                    status=CheckStatus.OK,
+                    message=f"Last sign finish {val:.1f}s ago",
+                    alert_key="sign_finish_stale",
+                ))
+
+        # Ephemeral share staleness
+        eph = report.seconds_since_last_ephemeral_share
+        if eph is not None:
+            threshold = block_time * th["ephemeral_share_stale_factor"]
+            if eph > threshold:
+                checks.append(CheckResult(
+                    name="ephemeral_share_stale",
+                    status=CheckStatus.WARNING,
+                    message=f"Last ephemeral share {eph:.1f}s ago (threshold {threshold}s)",
+                    alert_key="ephemeral_share_stale",
+                ))
+            else:
+                checks.append(CheckResult(
+                    name="ephemeral_share_stale",
+                    status=CheckStatus.OK,
+                    message=f"Last ephemeral share {eph:.1f}s ago",
+                    alert_key="ephemeral_share_stale",
+                ))
+
+    def _check_sentry_divergence(self, report: FullReport, checks: List[CheckResult]):
+        th = self.config.thresholds
+        heights = [s.block_height for s in report.sentries if s.block_height is not None]
+        if len(heights) < 2:
+            return
+        divergence = max(heights) - min(heights)
+        max_allowed = th["sentry_height_divergence"]
+        if divergence > max_allowed:
+            checks.append(CheckResult(
+                name="sentry_height_divergence",
+                status=CheckStatus.WARNING,
+                message=f"Sentry height divergence: {divergence} blocks (max {max_allowed})",
+                alert_key="sentry_height_divergence",
+            ))
+        else:
+            checks.append(CheckResult(
+                name="sentry_height_divergence",
+                status=CheckStatus.OK,
+                message=f"Sentry height divergence: {divergence} blocks",
+                alert_key="sentry_height_divergence",
+            ))
+
+    def _check_process_health(self, metrics: Dict, report: FullReport, checks: List[CheckResult]):
+        th = self.config.thresholds
+
+        # File descriptor usage
+        open_fds = get_metric(metrics, "process_open_fds")
+        max_fds = get_metric(metrics, "process_max_fds")
+        if open_fds is not None:
+            report.process_open_fds = int(open_fds)
+        if max_fds is not None:
+            report.process_max_fds = int(max_fds)
+        if open_fds is not None and max_fds is not None and max_fds > 0:
+            pct = (open_fds / max_fds) * 100
+            threshold = th["fd_usage_percent"]
+            if pct > threshold:
+                checks.append(CheckResult(
+                    name="fd_usage",
+                    status=CheckStatus.WARNING,
+                    message=f"FD usage: {int(open_fds)}/{int(max_fds)} ({pct:.0f}%, threshold {threshold}%)",
+                    alert_key="fd_usage",
+                ))
+            else:
+                checks.append(CheckResult(
+                    name="fd_usage",
+                    status=CheckStatus.OK,
+                    message=f"FD usage: {int(open_fds)}/{int(max_fds)} ({pct:.0f}%)",
+                    alert_key="fd_usage",
+                ))
+
+        # Memory usage
+        mem = get_metric(metrics, "process_resident_memory_bytes")
+        if mem is not None:
+            report.process_memory_bytes = int(mem)
+            mem_threshold = th["memory_bytes"]
+            if mem_threshold > 0 and mem > mem_threshold:
+                checks.append(CheckResult(
+                    name="memory_usage",
+                    status=CheckStatus.WARNING,
+                    message=f"Resident memory: {_fmt_bytes(mem)} (threshold {_fmt_bytes(mem_threshold)})",
+                    alert_key="memory_usage",
+                ))
+            else:
+                checks.append(CheckResult(
+                    name="memory_usage",
+                    status=CheckStatus.OK,
+                    message=f"Resident memory: {_fmt_bytes(mem)}",
+                    alert_key="memory_usage",
+                ))
+
+        # Goroutine growth
+        goroutines = get_metric(metrics, "go_goroutines")
+        if goroutines is not None:
+            report.go_goroutines = int(goroutines)
+            if self.prev_goroutines is not None and int(goroutines) > self.prev_goroutines:
+                self.goroutine_grow_streak += 1
+            else:
+                self.goroutine_grow_streak = 0
+            self.prev_goroutines = int(goroutines)
+
+            growth_threshold = th["goroutine_growth_checks"]
+            if self.goroutine_grow_streak >= growth_threshold:
+                checks.append(CheckResult(
+                    name="goroutine_growth",
+                    status=CheckStatus.WARNING,
+                    message=f"Goroutines growing: {int(goroutines)} (growing for {self.goroutine_grow_streak} checks)",
+                    alert_key="goroutine_growth",
+                ))
+            else:
+                checks.append(CheckResult(
+                    name="goroutine_growth",
+                    status=CheckStatus.OK,
+                    message=f"Goroutines: {int(goroutines)}",
+                    alert_key="goroutine_growth",
+                ))
+
+
+def _fmt_bytes(b: float) -> str:
+    """Format bytes into human-readable string."""
+    for unit in ("B", "KB", "MB", "GB"):
+        if abs(b) < 1024:
+            return f"{b:.1f} {unit}"
+        b /= 1024
+    return f"{b:.1f} TB"

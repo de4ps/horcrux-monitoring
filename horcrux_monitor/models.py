@@ -72,12 +72,26 @@ class FullReport:
     seconds_since_last_precommit: Optional[float] = None
     insufficient_cosigner_errors: Optional[int] = None
 
+    # Error counters
+    invalid_signature_errors: Optional[int] = None
+    beyond_block_errors: Optional[int] = None
+    failed_sign_votes: Optional[int] = None
+
+    # Signing freshness
+    seconds_since_last_sign_finish: Optional[float] = None
+
     # Sentry connectivity
     sentry_connect_tries: Optional[int] = None
 
     # Cosigners & sentries
     cosigners: list = field(default_factory=list)
     sentries: list = field(default_factory=list)
+
+    # Process health
+    process_open_fds: Optional[int] = None
+    process_max_fds: Optional[int] = None
+    process_memory_bytes: Optional[int] = None
+    go_goroutines: Optional[int] = None
 
     # Raft
     is_raft_leader: Optional[bool] = None
