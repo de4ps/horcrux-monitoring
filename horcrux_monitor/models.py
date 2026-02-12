@@ -69,6 +69,7 @@ class FullReport:
     last_precommit_height: Optional[int] = None
     missed_prevotes: Optional[int] = None
     missed_precommits: Optional[int] = None
+    seconds_since_last_precommit: Optional[float] = None
     insufficient_cosigner_errors: Optional[int] = None
 
     # Cosigners & sentries

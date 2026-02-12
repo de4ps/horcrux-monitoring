@@ -128,6 +128,12 @@ class Checker:
                     alert_key="missed_precommits",
                 ))
 
+        # Seconds since last precommit (informational only, no alert —
+        # non-leader cosigners legitimately show large values)
+        val = get_metric(metrics, "signer_seconds_since_last_precommit")
+        if val is not None:
+            report.seconds_since_last_precommit = val
+
         # Insufficient cosigner errors (counter — detect increase)
         val = get_metric(metrics, "signer_error_total_insufficient_cosigners")
         if val is not None:
