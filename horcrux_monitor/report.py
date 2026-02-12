@@ -88,8 +88,6 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
         st = _check_status_for(report, "failed_sign_votes")
         label = _check_message_suffix(report, "failed_sign_votes")
         lines.append(f"  {EMOJI[st]} Failed sign votes: {report.failed_sign_votes:,}{label}")
-    if report.seconds_since_last_sign_finish is not None:
-        lines.append(f"  \u2139\ufe0f Last sign finish: {_format_duration(report.seconds_since_last_sign_finish)} ago")
 
     if not report.metrics_ok:
         lines.append(f"  \U0001f534 Metrics endpoint unreachable")

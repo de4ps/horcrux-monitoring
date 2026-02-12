@@ -385,12 +385,6 @@ class Checker:
         th = cfg.thresholds
         block_time = cfg.block_time
 
-        # signer_seconds_since_last_local_sign_finish_time — read for display only,
-        # no alert: metric appears unreliable (shows stale values even when signing is healthy)
-        val = get_metric(metrics, "signer_seconds_since_last_local_sign_finish_time")
-        if val is not None:
-            report.seconds_since_last_sign_finish = val
-
         # Ephemeral share staleness
         eph = report.seconds_since_last_ephemeral_share
         if eph is not None:

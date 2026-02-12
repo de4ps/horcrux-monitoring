@@ -77,9 +77,6 @@ class FullReport:
     beyond_block_errors: Optional[int] = None
     failed_sign_votes: Optional[int] = None
 
-    # Signing freshness
-    seconds_since_last_sign_finish: Optional[float] = None
-
     # Sentry connectivity
     sentry_connect_tries: Optional[int] = None
 
