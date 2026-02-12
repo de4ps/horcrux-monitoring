@@ -12,6 +12,21 @@ EMOJI = {
 }
 
 
+def _format_duration(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    elif seconds < 3600:
+        return f"{seconds / 60:.0f}m"
+    elif seconds < 86400:
+        hours = int(seconds // 3600)
+        mins = int((seconds % 3600) // 60)
+        return f"{hours}h{mins}m"
+    else:
+        days = int(seconds // 86400)
+        hours = int((seconds % 86400) // 3600)
+        return f"{days}d{hours}h"
+
+
 def format_full_report(report: FullReport, timezone: str, name: str = "",
                        title: str = "Horcrux Status Report") -> str:
     """Format a full status report for display."""
@@ -47,7 +62,7 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
         st = _check_status_for(report, "missed_precommits")
         lines.append(f"  {EMOJI[st]} Missed precommits (consecutive): {report.missed_precommits}")
     if report.seconds_since_last_precommit is not None:
-        lines.append(f"  \u2705 Seconds since last precommit: {report.seconds_since_last_precommit:.1f}s")
+        lines.append(f"  \u2705 Last precommit: {_format_duration(report.seconds_since_last_precommit)} ago")
     if report.insufficient_cosigner_errors is not None:
         st = _check_status_for(report, "insufficient_cosigners")
         label = _check_message_suffix(report, "insufficient_cosigners")
