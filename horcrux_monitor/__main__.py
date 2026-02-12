@@ -1,18 +1,12 @@
 import argparse
 import logging
 import signal
-import sys
-import time
+import threading
 
 from .config import Config
 from .checker import Checker
 from .state import StateManager
-from .report import (
-    format_full_report,
-    format_problem_alert,
-    format_recovery,
-    format_startup_report,
-)
+from .report import format_full_report, format_startup_report
 from .notifiers.base import BaseNotifier
 from .notifiers.slack import SlackNotifier
 from .notifiers.telegram import TelegramNotifier
@@ -20,7 +14,7 @@ from .notifiers.logger import LogNotifier
 
 log = logging.getLogger("horcrux_monitor")
 
-running = True
+shutdown_event = threading.Event()
 
 
 def main():
@@ -63,9 +57,8 @@ def main():
 
     # Signal handling
     def handle_signal(signum, frame):
-        global running
         log.info("Received signal %d, shutting down...", signum)
-        running = False
+        shutdown_event.set()
 
     signal.signal(signal.SIGTERM, handle_signal)
     signal.signal(signal.SIGINT, handle_signal)
@@ -84,9 +77,8 @@ def main():
         return
 
     # Daemon loop
-    while running:
-        time.sleep(config.check_interval)
-        if not running:
+    while not shutdown_event.is_set():
+        if shutdown_event.wait(config.check_interval):
             break
 
         try:
