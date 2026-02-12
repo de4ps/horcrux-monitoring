@@ -128,25 +128,6 @@ class Checker:
                     alert_key="missed_precommits",
                 ))
 
-        # Seconds since last precommit
-        val = get_metric(metrics, "signer_seconds_since_last_precommit")
-        if val is not None:
-            report.seconds_since_last_precommit = val
-            if val > th["seconds_since_last_sign"]:
-                checks.append(CheckResult(
-                    name="seconds_since_last_sign",
-                    status=CheckStatus.CRITICAL,
-                    message=f"Seconds since last precommit: {val:.1f}s",
-                    alert_key="seconds_since_last_sign",
-                ))
-            else:
-                checks.append(CheckResult(
-                    name="seconds_since_last_sign",
-                    status=CheckStatus.OK,
-                    message=f"Seconds since last precommit: {val:.1f}s",
-                    alert_key="seconds_since_last_sign",
-                ))
-
         # Insufficient cosigner errors (counter — detect increase)
         val = get_metric(metrics, "signer_error_total_insufficient_cosigners")
         if val is not None:

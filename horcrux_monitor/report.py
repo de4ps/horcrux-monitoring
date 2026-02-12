@@ -46,9 +46,6 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
     if report.missed_precommits is not None:
         st = _check_status_for(report, "missed_precommits")
         lines.append(f"  {EMOJI[st]} Missed precommits (consecutive): {report.missed_precommits}")
-    if report.seconds_since_last_precommit is not None:
-        st = _check_status_for(report, "seconds_since_last_sign")
-        lines.append(f"  {EMOJI[st]} Seconds since last precommit: {report.seconds_since_last_precommit:.1f}s")
     if report.insufficient_cosigner_errors is not None:
         st = _check_status_for(report, "insufficient_cosigners")
         label = _check_message_suffix(report, "insufficient_cosigners")

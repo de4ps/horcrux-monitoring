@@ -105,7 +105,6 @@ Every `check_interval` (default 30s) the daemon collects metrics and runs health
 | Metrics endpoint down | HTTP GET `/metrics` | Critical | Unreachable |
 | Height stale | `signer_last_prevote_height` | Critical | No change for 3 checks (90s) |
 | Missed precommits | `signer_missed_precommits` | Critical | > threshold (default 3) |
-| Seconds since last sign | `signer_seconds_since_last_precommit` | Critical | > threshold (default 30s) |
 | Insufficient cosigners | `signer_error_total_insufficient_cosigners` | Critical | Counter increasing |
 | Missed prevotes | `signer_missed_prevotes` | Warning | > threshold (default 5) |
 | Cosigner unreachable | `signer_missed_ephemeral_shares` | Warning | Growing for 3+ checks |
