@@ -385,26 +385,11 @@ class Checker:
         th = cfg.thresholds
         block_time = cfg.block_time
 
-        # Seconds since last sign finish (only meaningful for leader)
+        # signer_seconds_since_last_local_sign_finish_time — read for display only,
+        # no alert: metric appears unreliable (shows stale values even when signing is healthy)
         val = get_metric(metrics, "signer_seconds_since_last_local_sign_finish_time")
         if val is not None:
             report.seconds_since_last_sign_finish = val
-            threshold = block_time * th["sign_finish_stale_factor"]
-            is_leader = report.is_raft_leader
-            if is_leader and val > threshold:
-                checks.append(CheckResult(
-                    name="sign_finish_stale",
-                    status=CheckStatus.WARNING,
-                    message=f"Last sign finish {val:.1f}s ago (threshold {threshold}s)",
-                    alert_key="sign_finish_stale",
-                ))
-            else:
-                checks.append(CheckResult(
-                    name="sign_finish_stale",
-                    status=CheckStatus.OK,
-                    message=f"Last sign finish {val:.1f}s ago",
-                    alert_key="sign_finish_stale",
-                ))
 
         # Ephemeral share staleness
         eph = report.seconds_since_last_ephemeral_share
