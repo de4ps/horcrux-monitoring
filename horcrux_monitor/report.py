@@ -151,4 +151,4 @@ def _format_cosigner(cs: CosignerStatus) -> str:
 def _format_sentry(s: SentryStatus) -> str:
     emoji = EMOJI[s.status]
     height_str = f"{s.block_height:,}" if s.block_height is not None else "unreachable"
-    return f"  {emoji} Sentry {s.index} ({s.address}) \u2014 height: {height_str}"
+    return f"  {emoji} Sentry {s.index} ({s.host}) \u2014 height: {height_str}"

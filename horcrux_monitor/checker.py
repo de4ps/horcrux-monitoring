@@ -274,6 +274,7 @@ class Checker:
             status = SentryStatus(
                 index=i + 1,
                 address=addr,
+                host=host,
                 block_height=block_height,
                 rpc_ok=rpc_ok,
             )

@@ -51,6 +51,7 @@ class CosignerStatus:
 class SentryStatus:
     index: int
     address: str
+    host: str = ""
     block_height: Optional[int] = None
     rpc_ok: bool = True
 
