@@ -72,6 +72,9 @@ class FullReport:
     seconds_since_last_precommit: Optional[float] = None
     insufficient_cosigner_errors: Optional[int] = None
 
+    # Sentry connectivity
+    sentry_connect_tries: Optional[int] = None
+
     # Cosigners & sentries
     cosigners: list = field(default_factory=list)
     sentries: list = field(default_factory=list)

@@ -84,6 +84,10 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
         lines.append("*Sentries (chain nodes):*")
         for s in report.sentries:
             lines.append(_format_sentry(s))
+        if report.sentry_connect_tries is not None:
+            st = _check_status_for(report, "sentry_connect_tries")
+            label = _check_message_suffix(report, "sentry_connect_tries")
+            lines.append(f"  {EMOJI[st]} Sentry connect retries: {report.sentry_connect_tries:,}{label}")
 
     # Raft section
     raft_lines = []

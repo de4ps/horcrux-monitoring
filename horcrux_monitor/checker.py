@@ -20,6 +20,7 @@ class Checker:
         self.cosigner_miss_streak: Dict[str, int] = {}  # addr → consecutive growing checks
         self.prev_height: Optional[int] = None
         self.height_stale_count: int = 0
+        self.prev_sentry_connect_tries: Optional[float] = None
 
     def run(self) -> FullReport:
         """Run all health checks and return a FullReport."""
@@ -44,8 +45,8 @@ class Checker:
             report.metrics_ok = True
             self._check_raft(metrics, report, checks)
             self._check_signing(metrics, report, checks)
+            self._check_sentry_connect(metrics, report, checks)
 
-        # TCP probes
         self._check_cosigners(metrics, report, checks)
         self._check_sentries(report, checks)
 
@@ -254,6 +255,36 @@ class Checker:
                         message=f"Cosigner shard {shard_id} ({addr}) missed shares growing ({shares})",
                         alert_key=f"cosigner_{shard_id}_shares",
                     ))
+
+    def _check_sentry_connect(self, metrics: Dict, report: FullReport, checks: List[CheckResult]):
+        """Check signer_sentry_connect_tries gauge — grows while horcrux can't reach a sentry."""
+        val = get_metric(metrics, "signer_sentry_connect_tries")
+        if val is not None:
+            report.sentry_connect_tries = int(val)
+            if self.prev_sentry_connect_tries is not None:
+                delta = val - self.prev_sentry_connect_tries
+                if delta > 0:
+                    checks.append(CheckResult(
+                        name="sentry_connect_tries",
+                        status=CheckStatus.WARNING,
+                        message=f"Sentry connect retries: {int(val):,} (+{int(delta)} since last check)",
+                        alert_key="sentry_connect_tries",
+                    ))
+                else:
+                    checks.append(CheckResult(
+                        name="sentry_connect_tries",
+                        status=CheckStatus.OK,
+                        message=f"Sentry connect retries: {int(val):,} (stable)",
+                        alert_key="sentry_connect_tries",
+                    ))
+            else:
+                checks.append(CheckResult(
+                    name="sentry_connect_tries",
+                    status=CheckStatus.OK,
+                    message=f"Sentry connect retries: {int(val):,} (stable)",
+                    alert_key="sentry_connect_tries",
+                ))
+            self.prev_sentry_connect_tries = val
 
     def _check_sentries(self, report: FullReport, checks: List[CheckResult]):
         cfg = self.config
