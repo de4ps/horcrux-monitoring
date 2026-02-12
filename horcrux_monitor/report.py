@@ -72,6 +72,11 @@ def format_full_report(report: FullReport, timezone: str, name: str = "",
 
     # Raft section
     raft_lines = []
+    if report.is_raft_leader is not None:
+        if report.is_raft_leader:
+            raft_lines.append("  \U0001f451 Role: leader")
+        else:
+            raft_lines.append("  \U0001f465 Role: follower")
     if report.raft_election_timeouts is not None:
         st = _check_status_for(report, "raft_election_timeouts")
         label = _check_message_suffix(report, "raft_election_timeouts")

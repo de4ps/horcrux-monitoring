@@ -138,6 +138,8 @@ class Checker:
         val = get_metric(metrics, "signer_seconds_since_last_precommit")
         if val is not None:
             report.seconds_since_last_precommit = val
+            # Fresh precommit means this cosigner is the Raft leader
+            report.is_raft_leader = val < cfg.block_time * 3
 
         # Insufficient cosigner errors (counter — detect increase)
         val = get_metric(metrics, "signer_error_total_insufficient_cosigners")
@@ -202,6 +204,7 @@ class Checker:
         val = get_metric(metrics, "signer_seconds_since_last_local_ephemeral_share_time")
         if val is not None:
             report.seconds_since_last_ephemeral_share = val
+
 
     def _check_cosigners(self, metrics: Optional[Dict], report: FullReport, checks: List[CheckResult]):
         cfg = self.config

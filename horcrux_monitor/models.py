@@ -77,6 +77,7 @@ class FullReport:
     sentries: list = field(default_factory=list)
 
     # Raft
+    is_raft_leader: Optional[bool] = None
     raft_election_timeouts: Optional[int] = None
     seconds_since_last_ephemeral_share: Optional[float] = None
 
