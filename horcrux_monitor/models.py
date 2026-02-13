@@ -120,3 +120,4 @@ class AlertState:
     first_seen: float
     last_alerted: float
     count: int = 1
+    recovered_at: Optional[float] = None  # grace period before truly clearing WARNING
