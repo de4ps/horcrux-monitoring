@@ -56,7 +56,10 @@ class StateManager:
                 alert.count += 1
                 if now - alert.last_alerted >= self.alert_cooldown:
                     alert.last_alerted = now
-                    re_alerts.append(check)
+                    # Only re-alert for CRITICAL; WARNING fires once
+                    # then appears only in scheduled reports (3x/day)
+                    if check.severity == Severity.CRITICAL:
+                        re_alerts.append(check)
 
         # Check for recoveries
         resolved_keys = [k for k in self.active_alerts if k not in current_problems]
